@@ -40,7 +40,7 @@ class Data:
         reader = pdal.Reader(self.filename, tag='reader')
         reader._options['threads'] = self.reader_thread_count
         if self.bounds:
-            reader._options['bounds'] = str(self.bounds)
+            reader._options['bounds'] = self.fmt_bounds(self.bounds)
         class_zero = pdal.Filter.assign(value="Classification = 0")
         rn = pdal.Filter.assign(value="ReturnNumber = 1 WHERE ReturnNumber < 1")
         nor = pdal.Filter.assign(value="NumberOfReturns = 1 WHERE NumberOfReturns < 1")
@@ -84,7 +84,7 @@ class Data:
             # we only answer to copc or ept readers
             if stage_kind in allowed_readers:
                 if self.bounds:
-                    stage._options['bounds'] = str(self.bounds)
+                    stage._options['bounds'] = self.fmt_bounds(self.bounds)
 
             # We strip off any writers from the pipeline that were
             # given to us and drop them  on the floor
@@ -148,7 +148,7 @@ class Data:
         """For the provided bounds, estimate the maximum number of points that could be inside them for this instance."""
         reader = self.get_reader()
         if bounds:
-            reader._options['bounds'] = str(bounds)
+            reader._options['bounds'] = self.fmt_bounds(bounds)
         pipeline = reader.pipeline()
         qi = pipeline.quickinfo[reader.type]
         pc = qi['num_points']
@@ -159,7 +159,11 @@ class Data:
         """For the provided bounds, read and count the number of points that are inside them for this instance."""
         reader = self.get_reader()
         if bounds:
-            reader._options['bounds'] = str(bounds)
+            reader._options['bounds'] = self.fmt_bounds(bounds)
         pipeline = reader.pipeline()
         pipeline.execute()
         return len(pipeline.arrays[0])
+
+    def fmt_bounds(self, bounds) -> str:
+        # This bounds format is supported by older PDAL versions (TODO which one(s)?)
+        return f"([{bounds.minx},{bounds.maxx}],[{bounds.miny},{bounds.maxy}])"
